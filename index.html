@@ -88,6 +88,7 @@ label{display:block;font-weight:700;margin-bottom:8px}
 <h2 style="margin-top:18px">給生管的標準訊息</h2>
 <div class="summary" id="summary"></div>
 <button class="action" onclick="copySummary()">複製訊息</button>
+<button class="action" onclick="clearForNext()">清除重量，輸入下一張單</button>
 <button class="action reset" onclick="resetAll()">重新判定</button>
 </div>
 
@@ -147,6 +148,11 @@ function judgeUnknown(){
 function copySummary(){
  const t=document.getElementById('summary').textContent;
  navigator.clipboard.writeText(t).then(()=>alert('已複製，可直接貼給生管。')).catch(()=>alert('請手動複製文字。'))
+}
+function clearForNext(){
+ document.querySelectorAll('input').forEach(i=>i.value='');hide('resultCard');
+ const visibleInput=document.querySelector('.card:not(.hidden) input');
+ if(visibleInput){visibleInput.focus();visibleInput.scrollIntoView({behavior:'smooth',block:'center'})}
 }
 function resetAll(){
  clearActive(['q1yes','q1no','eq','neq','unk']);document.querySelectorAll('input').forEach(i=>i.value='');
