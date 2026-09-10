@@ -22,6 +22,7 @@ label{display:block;font-weight:700;margin-bottom:8px}
 .big{font-size:26px;font-weight:900;margin:4px 0 14px}
 .sheet{background:#fff;border:1px solid #d1d5db;border-radius:12px;padding:13px;margin:9px 0;line-height:1.8}
 .alert{font-weight:900;color:#b91c1c;margin:10px 0;font-size:18px}
+.manifest-note{font-weight:900;color:#dc2626}
 .summary{white-space:pre-wrap;background:#111827;color:#fff;border-radius:12px;padding:14px;line-height:1.75;font-size:15px}
 .action{width:100%;margin-top:10px;padding:14px;border:none;border-radius:11px;font-size:17px;font-weight:800;background:#111827;color:#fff}
 .reset{background:#6b7280}
@@ -140,8 +141,12 @@ function setQ3(hasSpecified){
 function render(type,headline,body,summary,warn=false){
  const c=document.getElementById('resultCard');c.className='card result '+(warn?'warn':'ok');
  document.getElementById('badge').textContent=type;document.getElementById('headline').textContent=headline;
- document.getElementById('resultBody').innerHTML=body;document.getElementById('summary').textContent=summary;show('resultCard');
+ document.getElementById('resultBody').innerHTML=body;highlightManifestNote(summary);show('resultCard');
  setTimeout(()=>c.scrollIntoView({behavior:'smooth',block:'start'}),100)
+}
+function highlightManifestNote(text){
+ const box=document.getElementById('summary'),token='（補上聯單號碼）',parts=text.split(token);box.textContent='';
+ parts.forEach((part,index)=>{box.appendChild(document.createTextNode(part));if(index<parts.length-1){const note=document.createElement('span');note.className='manifest-note';note.textContent=token;box.appendChild(note)}})
 }
 function judgeNoManifest(){
  const w=document.getElementById('actualOnly').value;if(!w){alert('請輸入實際收貨重量');return}
@@ -152,8 +157,8 @@ function judgeNoManifest(){
 function judgeEqual(){
  const w=document.getElementById('equalWeight').value;if(!w){alert('請輸入重量');return}
  render('1張－勾12','準備 1 張收料單',
- `<div class="sheet"><strong>同一張收料單</strong><br>☑ 勾「一」＋☑ 勾「二」<br>實際收貨重量＝聯單申報重量＝<strong>${w} kg</strong></div>`,
- `【收料單開立需求】\n聯單：有\n重量狀況：相等\n判定：1張－勾12\n同一張：勾「一＋二」－${w} kg`)
+ `<div class="sheet"><strong>同一張收料單</strong><br>☑ 勾「一」＋☑ 勾「二」<br>實際收貨重量＝聯單申報重量＝<strong>${w} kg</strong><br>回廠後依實際收貨重量登打第 1 張地磅單 <span class="manifest-note">（補上聯單號碼）</span></div>`,
+ `【收料單開立需求】\n聯單：有\n重量狀況：相等\n判定：收料單1張－勾「一＋二」\n同一張收料單：填入相同重量 ${w} kg\n回廠後依實際收貨重量 ${w} kg 登打第1張地磅單（補上聯單號碼）`)
 }
 function judgeDifferent(){
  const a=document.getElementById('actualWeight').value,m=document.getElementById('manifestWeight').value;
@@ -161,16 +166,16 @@ function judgeDifferent(){
  render('2張－分 一、二','★ 準備 2 張收料單 ★',
  `<div class="alert">實際收貨重量 ≠ 聯單申報重量</div>
  <div class="sheet"><strong>第 1 張收料單</strong><br>☑ 勾「一」<br>填入實際收貨重量：<strong>${a} kg</strong><br>回廠後依實際收貨重量登打第 1 張地磅單。</div>
- <div class="sheet"><strong>第 2 張收料單</strong><br>☑ 勾「二」<br>填入聯單申報重量：<strong>${m} kg</strong><br>回廠後依聯單申報重量登打第 2 張地磅單。</div>`,
- `【地磅單開立需求】\n聯單：有\n實際收貨重量：${a} kg\n聯單申報重量：${m} kg\n判定：收料單2張－分 一、二\n第1張收料單：勾「一」－${a} kg\n回廠後依實際收貨重量 ${a} kg 登打第1張地磅單\n第2張收料單：勾「二」－${m} kg\n回廠後依聯單申報重量 ${m} kg 登打第2張地磅單`,true)
+ <div class="sheet"><strong>第 2 張收料單</strong><br>☑ 勾「二」<br>填入聯單申報重量：<strong>${m} kg</strong><br>回廠後依聯單申報重量登打第 2 張地磅單 <span class="manifest-note">（補上聯單號碼）</span></div>`,
+ `【地磅單開立需求】\n聯單：有\n實際收貨重量：${a} kg\n聯單申報重量：${m} kg\n判定：收料單2張－分 一、二\n第1張收料單：勾「一」－${a} kg\n回廠後依實際收貨重量 ${a} kg 登打第1張地磅單\n第2張收料單：勾「二」－${m} kg\n回廠後依聯單申報重量 ${m} kg 登打第2張地磅單（補上聯單號碼）`,true)
 }
 function judgeSpecified(){
  const a=document.getElementById('specifiedActualWeight').value,m=document.getElementById('specifiedManifestWeight').value;
  if(!a||!m){alert('請輸入兩個重量');return}
  render('2張－分 一、二','★ 準備 2 張收料單 ★',
  `<div class="sheet"><strong>第 1 張收料單</strong><br>☑ 勾「一」<br>填入實際收貨重量：<strong>${a} kg</strong><br>回廠後依實際收貨重量登打第 1 張地磅單。</div>
- <div class="sheet"><strong>第 2 張收料單</strong><br>☑ 勾「二」<br>填入客戶指定聯單申報重量：<strong>${m} kg</strong><br>回廠後依客戶指定聯單申報重量登打第 2 張地磅單。</div>`,
- `【地磅單開立需求】\n聯單：有\n重量狀況：目前無法確認\n客戶指定聯單申報重量：有\n實際收貨重量：${a} kg\n客戶指定聯單申報重量：${m} kg\n判定：收料單2張－分 一、二\n第1張收料單：勾「一」－${a} kg\n回廠後依實際收貨重量 ${a} kg 登打第1張地磅單\n第2張收料單：勾「二」－${m} kg\n回廠後依客戶指定聯單申報重量 ${m} kg 登打第2張地磅單`,true)
+ <div class="sheet"><strong>第 2 張收料單</strong><br>☑ 勾「二」<br>填入客戶指定聯單申報重量：<strong>${m} kg</strong><br>回廠後依客戶指定聯單申報重量登打第 2 張地磅單 <span class="manifest-note">（補上聯單號碼）</span></div>`,
+ `【地磅單開立需求】\n聯單：有\n重量狀況：目前無法確認\n客戶指定聯單申報重量：有\n實際收貨重量：${a} kg\n客戶指定聯單申報重量：${m} kg\n判定：收料單2張－分 一、二\n第1張收料單：勾「一」－${a} kg\n回廠後依實際收貨重量 ${a} kg 登打第1張地磅單\n第2張收料單：勾「二」－${m} kg\n回廠後依客戶指定聯單申報重量 ${m} kg 登打第2張地磅單（補上聯單號碼）`,true)
 }
 function judgeUnknown(){
  const w=document.getElementById('receiptWeight').value;if(!w){alert('請輸入收料單重量');return}
