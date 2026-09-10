@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>司機收料單判定工具 V0.1.1</title>
+<style>
+body{margin:0;font-family:"Microsoft JhengHei",sans-serif;background:#f4f6f8;color:#1f2937}
+.wrap{max-width:620px;margin:auto;padding:16px 12px 36px}
+.header{background:#111827;color:#fff;border-radius:16px;padding:18px;margin-bottom:12px}
+.header h1{margin:0 0 6px;font-size:22px}.header p{margin:0;opacity:.88;font-size:14px;line-height:1.6}
+.card{background:#fff;border-radius:16px;padding:17px;margin:12px 0;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+h2{font-size:18px;margin:0 0 14px}
+.choice{display:grid;grid-template-columns:1fr 1fr;gap:10px}.choice.three{grid-template-columns:1fr}
+button.opt{padding:15px 10px;min-height:54px;font-size:17px;border-radius:12px;border:1px solid #d1d5db;background:#fff;font-weight:800}
+button.opt.active{border:2px solid #2563eb;background:#eff6ff;color:#1d4ed8}
+input[type=number]{width:100%;padding:13px;border:1px solid #d1d5db;border-radius:11px;font-size:18px;box-sizing:border-box}
+label{display:block;font-weight:700;margin-bottom:8px}
+.hidden{display:none}.hint{font-size:13px;color:#6b7280;margin-top:8px;line-height:1.6}
+.result{border:2px solid #111827}.result.ok{border-color:#166534;background:#f0fdf4}.result.warn{border-color:#b91c1c;background:#fef2f2}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:13px;font-weight:800;background:#111827;color:#fff;margin-bottom:10px}
+.big{font-size:26px;font-weight:900;margin:4px 0 14px}
+.sheet{background:#fff;border:1px solid #d1d5db;border-radius:12px;padding:13px;margin:9px 0;line-height:1.8}
+.alert{font-weight:900;color:#b91c1c;margin:10px 0;font-size:18px}
+.summary{white-space:pre-wrap;background:#111827;color:#fff;border-radius:12px;padding:14px;line-height:1.75;font-size:15px}
+.action{width:100%;margin-top:10px;padding:14px;border:none;border-radius:11px;font-size:17px;font-weight:800;background:#111827;color:#fff}
+.reset{background:#6b7280}
+.rule{text-align:center;font-weight:900;font-size:19px;padding:14px;border:2px dashed #b91c1c;border-radius:12px;color:#b91c1c;background:#fff}
+@media(max-width:480px){.choice{grid-template-columns:1fr}.header h1{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="header"><h1>司機收料單判定工具 V0.1.1</h1><p>已移除客戶、收料單號欄位。回答現場狀況，系統直接告訴你要幾張收料單、勾「一」還是「二」。</p></div>
+
+<div class="card">
+<h2>Q1：這批有聯單嗎？</h2>
+<div class="choice">
+<button class="opt" id="q1yes" onclick="setQ1(true)">有聯單</button>
+<button class="opt" id="q1no" onclick="setQ1(false)">無聯單</button>
+</div>
+</div>
+
+<div class="card hidden" id="noManifestWeight">
+<h2>請輸入實際收貨重量</h2>
+<label>實際收貨重量（kg）</label>
+<input id="actualOnly" type="number" step="0.01" inputmode="decimal" placeholder="例如：850">
+<button class="action" onclick="judgeNoManifest()">產生判定結果</button>
+</div>
+
+<div class="card hidden" id="q2card">
+<h2>Q2：聯單申報重量是否可確認與實際收貨重量相等？</h2>
+<div class="choice three">
+<button class="opt" id="eq" onclick="setQ2('equal')">相等</button>
+<button class="opt" id="neq" onclick="setQ2('different')">不相等</button>
+<button class="opt" id="unk" onclick="setQ2('unknown')">目前無法確認<br>（例如：客戶端無過大磅）</button>
+</div>
+</div>
+
+<div class="card hidden" id="equalCard">
+<h2>請輸入相同重量</h2>
+<label>實際收貨／聯單申報重量（kg）</label>
+<input id="equalWeight" type="number" step="0.01" inputmode="decimal" placeholder="例如：1500">
+<button class="action" onclick="judgeEqual()">產生判定結果</button>
+</div>
+
+<div class="card hidden" id="differentCard">
+<h2>請輸入兩個重量</h2>
+<label>實際收貨重量（kg）</label>
+<input id="actualWeight" type="number" step="0.01" inputmode="decimal" placeholder="例如：1084.65" style="margin-bottom:12px">
+<label>聯單申報重量（kg）</label>
+<input id="manifestWeight" type="number" step="0.01" inputmode="decimal" placeholder="例如：980">
+<button class="action" onclick="judgeDifferent()">產生判定結果</button>
+</div>
+
+<div class="card hidden" id="unknownCard">
+<h2>目前無法確認重量是否相等</h2>
+<label>收料單重量（kg）</label>
+<input id="receiptWeight" type="number" step="0.01" inputmode="decimal" placeholder="例如：896.6">
+<div class="hint">客戶端無過大磅時，回廠後依收料單重量登打地磅單。</div>
+<button class="action" onclick="judgeUnknown()">產生判定結果</button>
+</div>
+
+<div class="card hidden result" id="resultCard">
+<div class="badge" id="badge">判定結果</div>
+<div class="big" id="headline"></div>
+<div id="resultBody"></div>
+<h2 style="margin-top:18px">給生管的標準訊息</h2>
+<div class="summary" id="summary"></div>
+<button class="action" onclick="copySummary()">複製訊息</button>
+<button class="action reset" onclick="resetAll()">重新判定</button>
+</div>
+
+<div class="card">
+<div class="rule">實際收貨重量 ≠ 聯單申報重量 → 一律分 2 張收料單</div>
+<div class="hint" style="text-align:center;margin-top:10px">第 1 張勾「一」＝實際收貨重量；第 2 張勾「二」＝聯單申報重量</div>
+</div>
+</div>
+
+<script>
+function hide(...ids){ids.forEach(id=>document.getElementById(id).classList.add('hidden'))}
+function show(id){document.getElementById(id).classList.remove('hidden')}
+function clearActive(ids){ids.forEach(id=>document.getElementById(id).classList.remove('active'))}
+function setQ1(hasManifest){
+ clearActive(['q1yes','q1no']);document.getElementById(hasManifest?'q1yes':'q1no').classList.add('active');
+ hide('noManifestWeight','q2card','equalCard','differentCard','unknownCard','resultCard');
+ if(hasManifest)show('q2card');else show('noManifestWeight')
+}
+function setQ2(v){
+ clearActive(['eq','neq','unk']);document.getElementById(v==='equal'?'eq':v==='different'?'neq':'unk').classList.add('active');
+ hide('equalCard','differentCard','unknownCard','resultCard');
+ if(v==='equal')show('equalCard');if(v==='different')show('differentCard');if(v==='unknown')show('unknownCard')
+}
+function render(type,headline,body,summary,warn=false){
+ const c=document.getElementById('resultCard');c.className='card result '+(warn?'warn':'ok');
+ document.getElementById('badge').textContent=type;document.getElementById('headline').textContent=headline;
+ document.getElementById('resultBody').innerHTML=body;document.getElementById('summary').textContent=summary;show('resultCard');
+ setTimeout(()=>c.scrollIntoView({behavior:'smooth',block:'start'}),100)
+}
+function judgeNoManifest(){
+ const w=document.getElementById('actualOnly').value;if(!w){alert('請輸入實際收貨重量');return}
+ render('1張－勾1','準備 1 張收料單',
+ `<div class="sheet"><strong>第 1 張</strong><br>☑ 勾「一」<br>填寫實際收貨重量：<strong>${w} kg</strong></div>`,
+ `【收料單開立需求】\n聯單：無\n判定：1張－勾1\n第1張：勾「一」－實際收貨重量 ${w} kg`)
+}
+function judgeEqual(){
+ const w=document.getElementById('equalWeight').value;if(!w){alert('請輸入重量');return}
+ render('1張－勾12','準備 1 張收料單',
+ `<div class="sheet"><strong>同一張收料單</strong><br>☑ 勾「一」＋☑ 勾「二」<br>實際收貨重量＝聯單申報重量＝<strong>${w} kg</strong></div>`,
+ `【收料單開立需求】\n聯單：有\n重量狀況：相等\n判定：1張－勾12\n同一張：勾「一＋二」－${w} kg`)
+}
+function judgeDifferent(){
+ const a=document.getElementById('actualWeight').value,m=document.getElementById('manifestWeight').value;
+ if(!a||!m){alert('請輸入兩個重量');return}
+ render('2張－分12','★ 準備 2 張收料單 ★',
+ `<div class="alert">實際收貨重量 ≠ 聯單申報重量</div>
+ <div class="sheet"><strong>第 1 張收料單</strong><br>☑ 勾「一」<br>實際收貨重量：<strong>${a} kg</strong></div>
+ <div class="sheet"><strong>第 2 張收料單</strong><br>☑ 勾「二」<br>聯單申報重量：<strong>${m} kg</strong></div>`,
+ `【收料單開立需求】\n聯單：有\n實際收貨重量：${a} kg\n聯單申報重量：${m} kg\n判定：2張－分12\n第1張：勾「一」－${a} kg\n第2張：勾「二」－${m} kg`,true)
+}
+function judgeUnknown(){
+ const w=document.getElementById('receiptWeight').value;if(!w){alert('請輸入收料單重量');return}
+ render('1張－待確認12','準備 1 張收料單',
+ `<div class="sheet"><strong>同一張收料單</strong><br>☑ 勾「一」＋☑ 勾「二」<br>收料單重量：<strong>${w} kg</strong><br><br>回廠後依收料單重量登打地磅單。</div>`,
+ `【收料單開立需求】\n聯單：有\n重量狀況：目前無法確認\n判定：1張－待確認12\n同一張：勾「一＋二」\n回廠後依收料單重量 ${w} kg 登打地磅單`)
+}
+function copySummary(){
+ const t=document.getElementById('summary').textContent;
+ navigator.clipboard.writeText(t).then(()=>alert('已複製，可直接貼給生管。')).catch(()=>alert('請手動複製文字。'))
+}
+function resetAll(){
+ clearActive(['q1yes','q1no','eq','neq','unk']);document.querySelectorAll('input').forEach(i=>i.value='');
+ hide('noManifestWeight','q2card','equalCard','differentCard','unknownCard','resultCard');window.scrollTo({top:0,behavior:'smooth'})
+}
+</script>
+</body>
+</html>
