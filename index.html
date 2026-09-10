@@ -136,7 +136,7 @@ function judgeDifferent(){
  `<div class="alert">實際收貨重量 ≠ 聯單申報重量</div>
  <div class="sheet"><strong>第 1 張收料單</strong><br>☑ 勾「一」<br>實際收貨重量：<strong>${a} kg</strong></div>
  <div class="sheet"><strong>第 2 張收料單</strong><br>☑ 勾「二」<br>聯單申報重量：<strong>${m} kg</strong></div>`,
- `【收料單開立需求】\n聯單：有\n實際收貨重量：${a} kg\n聯單申報重量：${m} kg\n判定：2張－分12\n第1張：勾「一」－${a} kg\n第2張：勾「二」－${m} kg`,true)
+ `【地磅單開立需求】\n聯單：有\n實際收貨重量：${a} kg\n聯單申報重量：${m} kg\n判定：2張－分12\n第1張：勾「一」－${a} kg\n第2張：勾「二」－${m} kg\n地磅單：\n第1張：勾「一」做 ${a} kg\n第2張：勾「二」做 ${m} kg`,true)
 }
 function judgeUnknown(){
  const w=document.getElementById('receiptWeight').value;if(!w){alert('請輸入收料單重量');return}
