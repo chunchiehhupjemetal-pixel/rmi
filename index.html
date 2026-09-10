@@ -73,8 +73,25 @@ label{display:block;font-weight:700;margin-bottom:8px}
 <button class="action" onclick="judgeDifferent()">產生判定結果</button>
 </div>
 
+<div class="card hidden" id="q3card">
+<h2>Q3：客戶是否有指定「聯單申報重量」？</h2>
+<div class="choice">
+<button class="opt" id="specifiedYes" onclick="setQ3(true)">有指定</button>
+<button class="opt" id="specifiedNo" onclick="setQ3(false)">無指定</button>
+</div>
+</div>
+
+<div class="card hidden" id="specifiedCard">
+<h2>請輸入兩個重量</h2>
+<label>實際收貨重量（kg）</label>
+<input id="specifiedActualWeight" type="number" step="0.01" inputmode="decimal" placeholder="例如：1084.65" style="margin-bottom:12px">
+<label>客戶指定聯單申報重量（kg）</label>
+<input id="specifiedManifestWeight" type="number" step="0.01" inputmode="decimal" placeholder="例如：980">
+<button class="action" onclick="judgeSpecified()">產生判定結果</button>
+</div>
+
 <div class="card hidden" id="unknownCard">
-<h2>目前無法確認重量是否相等</h2>
+<h2>客戶無指定聯單申報重量</h2>
 <label>收料單重量（kg）</label>
 <input id="receiptWeight" type="number" step="0.01" inputmode="decimal" placeholder="例如：896.6">
 <div class="hint">客戶端無過大磅時，回廠後依收料單重量登打地磅單。</div>
@@ -104,13 +121,21 @@ function show(id){document.getElementById(id).classList.remove('hidden')}
 function clearActive(ids){ids.forEach(id=>document.getElementById(id).classList.remove('active'))}
 function setQ1(hasManifest){
  clearActive(['q1yes','q1no']);document.getElementById(hasManifest?'q1yes':'q1no').classList.add('active');
- hide('noManifestWeight','q2card','equalCard','differentCard','unknownCard','resultCard');
+ clearActive(['eq','neq','unk','specifiedYes','specifiedNo']);
+ hide('noManifestWeight','q2card','equalCard','differentCard','q3card','specifiedCard','unknownCard','resultCard');
  if(hasManifest)show('q2card');else show('noManifestWeight')
 }
 function setQ2(v){
  clearActive(['eq','neq','unk']);document.getElementById(v==='equal'?'eq':v==='different'?'neq':'unk').classList.add('active');
- hide('equalCard','differentCard','unknownCard','resultCard');
- if(v==='equal')show('equalCard');if(v==='different')show('differentCard');if(v==='unknown')show('unknownCard')
+ clearActive(['specifiedYes','specifiedNo']);
+ hide('equalCard','differentCard','q3card','specifiedCard','unknownCard','resultCard');
+ if(v==='equal')show('equalCard');if(v==='different')show('differentCard');if(v==='unknown')show('q3card')
+}
+function setQ3(hasSpecified){
+ clearActive(['specifiedYes','specifiedNo']);
+ document.getElementById(hasSpecified?'specifiedYes':'specifiedNo').classList.add('active');
+ hide('specifiedCard','unknownCard','resultCard');
+ if(hasSpecified)show('specifiedCard');else show('unknownCard')
 }
 function render(type,headline,body,summary,warn=false){
  const c=document.getElementById('resultCard');c.className='card result '+(warn?'warn':'ok');
@@ -139,11 +164,20 @@ function judgeDifferent(){
  <div class="sheet"><strong>第 2 張收料單</strong><br>☑ 勾「二」<br>聯單申報重量：<strong>${m} kg</strong></div>`,
  `【地磅單開立需求】\n聯單：有\n實際收貨重量：${a} kg\n聯單申報重量：${m} kg\n判定：2張－分12\n第1張：勾「一」－${a} kg\n第2張：勾「二」－${m} kg\n地磅單：\n第1張：勾「一」做 ${a} kg\n第2張：勾「二」做 ${m} kg`,true)
 }
+function judgeSpecified(){
+ const a=document.getElementById('specifiedActualWeight').value,m=document.getElementById('specifiedManifestWeight').value;
+ if(!a||!m){alert('請輸入兩個重量');return}
+ render('2張－分12','★ 準備 2 張收料單 ★',
+ `<div class="sheet"><strong>第 1 張收料單</strong><br>☑ 勾「一」<br>實際收貨重量：<strong>${a} kg</strong></div>
+ <div class="sheet"><strong>第 2 張收料單</strong><br>☑ 勾「二」<br>客戶指定聯單申報重量：<strong>${m} kg</strong></div>
+ <div class="sheet"><strong>回廠後</strong><br>依客戶指定聯單申報重量 <strong>${m} kg</strong> 登打地磅單。</div>`,
+ `【地磅單開立需求】\n聯單：有\n重量狀況：目前無法確認\n客戶指定聯單申報重量：有\n實際收貨重量：${a} kg\n客戶指定聯單申報重量：${m} kg\n判定：2張－分12\n第1張：勾「一」－${a} kg\n第2張：勾「二」－${m} kg\n回廠後依客戶指定聯單申報重量 ${m} kg 登打地磅單`,true)
+}
 function judgeUnknown(){
  const w=document.getElementById('receiptWeight').value;if(!w){alert('請輸入收料單重量');return}
  render('1張－待確認12','準備 1 張收料單',
  `<div class="sheet"><strong>同一張收料單</strong><br>☑ 勾「一」＋☑ 勾「二」<br>收料單重量：<strong>${w} kg</strong><br><br>回廠後依收料單重量登打地磅單。</div>`,
- `【收料單開立需求】\n聯單：有\n重量狀況：目前無法確認\n判定：1張－待確認12\n同一張：勾「一＋二」\n回廠後依收料單重量 ${w} kg 登打地磅單`)
+ `【收料單開立需求】\n聯單：有\n重量狀況：目前無法確認\n客戶指定聯單申報重量：無\n判定：1張－待確認12\n同一張：勾「一＋二」\n回廠後依收料單重量 ${w} kg 登打地磅單`)
 }
 function copySummary(){
  const t=document.getElementById('summary').textContent;
@@ -155,8 +189,8 @@ function clearForNext(){
  if(visibleInput){visibleInput.focus();visibleInput.scrollIntoView({behavior:'smooth',block:'center'})}
 }
 function resetAll(){
- clearActive(['q1yes','q1no','eq','neq','unk']);document.querySelectorAll('input').forEach(i=>i.value='');
- hide('noManifestWeight','q2card','equalCard','differentCard','unknownCard','resultCard');window.scrollTo({top:0,behavior:'smooth'})
+ clearActive(['q1yes','q1no','eq','neq','unk','specifiedYes','specifiedNo']);document.querySelectorAll('input').forEach(i=>i.value='');
+ hide('noManifestWeight','q2card','equalCard','differentCard','q3card','specifiedCard','unknownCard','resultCard');window.scrollTo({top:0,behavior:'smooth'})
 }
 </script>
 </body>
